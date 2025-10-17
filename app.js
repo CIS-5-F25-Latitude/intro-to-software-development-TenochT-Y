@@ -10,20 +10,34 @@ const state = {
   paddle: { x: 200, y: canvas.height - 20, w: 80, h: 10, speed: 4 },
   score: 0,
   running: true,
-  keys: { left: false, right: false },
+  keys: { left: false, right: false, up: false },
+  onGround: false,
 };
 
 // Input
 document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') state.keys.left = true;
   if (e.key === 'ArrowRight') state.keys.right = true;
+  if (e.key === 'ArrowUp') state.keys.up = true;
 });
 document.addEventListener('keyup', (e) => {
   if (e.key === 'ArrowLeft') state.keys.left = false;
   if (e.key === 'ArrowRight') state.keys.right = false;
+  if (e.key === 'ArrowUp') state.keys.up = false;
 });
 
 document.getElementById('btn-restart').addEventListener('click', () => restart());
+document.getElementById('btn-jump').addEventListener('click', () => doJump());
+
+function doJump() {
+  // Only jump when touching the ground
+  if (state.onGround) {
+    // Give a negative vy to go up. Use a value that results in a slower ascent
+    // than the descent (we'll apply stronger gravity when falling).
+    state.ball.vy = -6;
+    state.onGround = false;
+  }
+}
 
 function restart() {
   state.ball.x = 60; state.ball.y = 60; state.ball.vx = 2; state.ball.vy = 2;
@@ -43,6 +57,15 @@ function update() {
 
   // Ball movement
   state.ball.x += state.ball.vx;
+
+  // Gravity: weaker while rising, stronger while falling so ascent is slower than descent
+  const GRAVITY_UP = 0.18; // slow upward deceleration
+  const GRAVITY_DOWN = 0.5; // faster downward acceleration
+  if (state.ball.vy < 0) {
+    state.ball.vy += GRAVITY_UP;
+  } else {
+    state.ball.vy += GRAVITY_DOWN;
+  }
   state.ball.y += state.ball.vy;
 
   // Wall bounce
@@ -63,8 +86,18 @@ function update() {
     drawHud();
   }
 
-  // Missed ball → stop
-  if (state.ball.y - state.ball.r > canvas.height) {
+  // Ground collision and landing
+  const groundY = canvas.height; // canvas bottom is ground
+  if (state.ball.y + state.ball.r >= groundY) {
+    // Clamp to ground
+    state.ball.y = groundY - state.ball.r;
+    // Stop downward velocity
+    if (state.ball.vy > 0) state.ball.vy = 0;
+    state.onGround = true;
+  }
+
+  // Missed ball (gone below ground) should not happen due to clamping, but if it does, stop the game
+  if (state.ball.y - state.ball.r > canvas.height + 50) {
     state.running = false;
   }
 }
