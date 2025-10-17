@@ -14,7 +14,14 @@ const state = {
 
 // Controls
 const keys = { up: false };
-document.addEventListener('keydown', (e) => { if (e.key === 'ArrowUp' || e.code === 'Space') keys.up = true; });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowUp' || e.code === 'Space') keys.up = true;
+  // Restart key: 'r' or 'R'
+  if (e.key === 'r' || e.key === 'R') {
+    // allow restart at any time (resets state)
+    restart();
+  }
+});
 document.addEventListener('keyup', (e) => { if (e.key === 'ArrowUp' || e.code === 'Space') keys.up = false; });
 
 // Buttons
